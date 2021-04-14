@@ -3,14 +3,11 @@ const app = express();
 const path = require('path');
 const mongoose = require('mongoose');
 const ejsMate = require('ejs-mate');
-const {campgroundSchema, reviewSchema} = require('./joi/schemas');
 const methodOverride = require('method-override');
-const campGround = require('./models/campground');
-const catchAsync = require('./utilities/catchAsync');
 const ExpressError = require('./utilities/expressError');
-const Review = require('./models/review');
 
-
+const campgrounds = require('./routes/campground');
+const reviews = require('./routes/reviews');
 
 mongoose.connect('mongodb://localhost:27017/yelp-camp', { useNewUrlParser: true, useUnifiedTopology: true, useCreateIndex: true })
     .then(() => {
@@ -27,98 +24,8 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 
 
-
-
-
-
-const validateCampground = (req, res, next) => {
-    
-    const {error} = campgroundSchema.validate(req.body);
-    // console.log(result.error.details);
-    if(error){
-        const msg = error.details.map(el => el.message).join(',');
-        throw new ExpressError(msg, 400);
-    }
-    else{
-        next();
-    }
-}
-
-const validateReview = (req, res, next) => {
-    const {error} = reviewSchema.validate(req.body);
-
-    if(error){
-        const msg = error.details.map(el => el.message).join(',');
-        throw new ExpressError(msg, 400);
-    }else{
-        next();
-    }
-}
-
-app.get('/campgrounds', catchAsync(async (req, res) => {
-    const campgrounds = await campGround.find({});
-    res.render('campgrounds/index', { campgrounds });
-}))
-
-app.get('/campgrounds/new', (req, res) => {
-    res.render('campgrounds/new');
-})
-
-app.post('/campgrounds', validateCampground ,catchAsync(async (req, res) => {
-    // if(!req.body.campground) throw new ExpressError('Invalid Campground Data', 400);
-    
-    const { title, location, price, description, image } = req.body.campground;
-    const newCampGround = new campGround({ title: title, location: location, image: image, price: price, description: description });
-    await newCampGround.save();
-    res.redirect(`/campgrounds/${newCampGround._id}`);
-}))
-
-app.get('/campgrounds/:id/edit', catchAsync(async (req, res) => {
-    const {id} = req.params;
-    const reqcampground = await campGround.findById(id);
-    res.render('campgrounds/edit', {reqcampground});
-}))
-
-app.get('/campgrounds/:id', catchAsync(async (req, res) => {
-    const { id } = req.params;
-    const reqcampground = await campGround.findById(id).populate('reviews');
-    // console.log('start');
-    // console.log(reqcampground);
-    // console.log('end');
-    res.render('campgrounds/show', { reqcampground });
-}))
-
-app.delete('/campgrounds/:id',catchAsync(async (req, res) => {
-    const {id} = req.params;
-    await campGround.findByIdAndDelete(id);
-    res.redirect('/campgrounds');
-}))
-
-app.put('/campgrounds/:id', catchAsync(async (req, res) => {
-    const {id} = req.params;
-    const { title, location, price, image, description } = req.body.campground;
-    await campGround.findByIdAndUpdate(id, {title: title, location: location, price: price, description: description, image: image});
-    res.redirect(`/campgrounds/${id}`);
-}))
-
-app.post('/campgrounds/:id/reviews', validateReview, catchAsync(async (req, res) => {
-    // res.send('working post on review');
-    const {id} = req.params;
-    const campground = await campGround.findById(id);
-    const {rating, body} = req.body.review;
-    const newReview = new Review({body: body, rating: rating});
-    campground.reviews.push(newReview);
-    await newReview.save();
-    await campground.save();
-    res.redirect(`/campgrounds/${id}`);
-}))
-
-app.delete('/campgrounds/:id/reviews/:reviewId', catchAsync(async (req, res) => {
-    const {id, reviewId} = req.params;
-    await campGround.findByIdAndUpdate(id, {$pull: {reviews: reviewId}})
-    await Review.findByIdAndDelete(reviewId);
-    res.redirect(`/campgrounds/${id}`);
-}))
+app.use('/campgrounds', campgrounds)
+app.use('/campgrounds/:id/reviews', reviews)
 
 
 app.all('*', (req, res, next) => {
