@@ -14,16 +14,20 @@
                 <ul class="list-group list-group-flush">
                     <li class="list-group-item">Location: <%= reqcampground.location %>
                     </li>
+                    <li class="list-group-item">Submitted By: <%= reqcampground.author.username %>
+                    </li>
                     <li class="list-group-item">Price: $<%= reqcampground.price %>
                     </li>
                 </ul>
-                <div class="card-body" style="display: flex; justify-content: center;">
-                    <a href="/campgrounds/<%= reqcampground._id %>/edit" class="m-1 card-link btn btn-warning">Edit this
-                        Campground</a>
-                    <form action="/campgrounds/<%= reqcampground._id %>?_method=DELETE" method="POST">
-                        <button class="m-1 btn btn-danger class-link">Delete</button>
-                    </form>
-                </div>
+                <% if(currentUser && reqcampground.author.equals(currentUser._id)){ %> 
+                    <div class="card-body" style="display: flex; justify-content: center;">
+                        <a href="/campgrounds/<%= reqcampground._id %>/edit" class="m-1 card-link btn btn-warning">Edit this
+                            Campground</a>
+                        <form action="/campgrounds/<%= reqcampground._id %>?_method=DELETE" method="POST">
+                            <button class="m-1 btn btn-danger class-link">Delete</button>
+                        </form>
+                    </div>
+                <% } %> 
             </div>
         </div>
         <div class="col-6">
@@ -51,13 +55,15 @@
                         </h5>
                         <p class="card-text"> Review: <%= review.body %>
                         </p>
+                        <p class="card-text text-faded">Author: <b><%= currentUser.username %></b>
+                        </p>
                         <form action="/campgrounds/<%= reqcampground._id %>/reviews/<%= review._id %>?_method=DELETE"
                             method="POST">
                             <button class="btn btn-sm btn-danger">Delete</button>
                         </form>
                     </div>
                 </div>
-                <% } %>
+            <% } %>
 
         </div>
     </div>

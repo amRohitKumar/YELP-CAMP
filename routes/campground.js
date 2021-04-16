@@ -31,10 +31,9 @@ router.get('/new', isLoggedIn, (req, res) => {
 })
 
 router.post('/', isLoggedIn, validateCampground, catchAsync(async (req, res) => {
-    // if(!req.body.campground) throw new ExpressError('Invalid Campground Data', 400);
-
     const { title, location, price, description, image } = req.body.campground;
     const newCampGround = new campGround({ title: title, location: location, image: image, price: price, description: description });
+    newCampGround.author = req.user._id;
     await newCampGround.save();
     req.flash('success', 'Successfully made a new Campground !');
     res.redirect(`/campgrounds/${newCampGround._id}`);
@@ -47,12 +46,21 @@ router.get('/:id/edit', isLoggedIn, catchAsync(async (req, res) => {
         req.flash('error', 'Cannot find Campground !');
         return res.redirect('/campgrounds');
     }
-    res.render('campgrounds/edit', { reqcampground });
+    else{
+        if (reqcampground.author === req.user._id) {
+            // await campGround.findByIdAndUpdate(id, { title: title, location: location, price: price, description: description, image: image });
+            res.render('campgrounds/edit', { reqcampground });
+        } else {
+            req.flash('error', "You are not the author of this campground !");
+            res.redirect(`/campgrounds/${id}`);
+        }
+    }
 }))
 
 router.get('/:id', catchAsync(async (req, res) => {
     const { id } = req.params;
-    const reqcampground = await campGround.findById(id).populate('reviews');
+    const reqcampground = await campGround.findById(id).populate('reviews').populate('author');
+    console.log(reqcampground);
     if (!reqcampground) {
         req.flash('error', 'Cannot find Campground !');
         return res.redirect('/campgrounds');
@@ -62,17 +70,29 @@ router.get('/:id', catchAsync(async (req, res) => {
 
 router.delete('/:id', isLoggedIn, catchAsync(async (req, res) => {
     const { id } = req.params;
-    await campGround.findByIdAndDelete(id);
-    req.flash('success', 'Successfully deleted campground');
-    res.redirect('/campgrounds');
+    const findCampground = await campGround.findById(id);
+    if (findCampground.author === req.user._id) {
+        await campGround.findByIdAndDelete(id);
+        req.flash('success', 'Successfully deleted campground');
+        res.redirect('/campgrounds');
+    } else {
+        req.flash('error', "You don't have the permission to delete this campground !");
+        res.redirect('/campgrounds');
+    }
 }))
 
 router.put('/:id', isLoggedIn, catchAsync(async (req, res) => {
     const { id } = req.params;
     const { title, location, price, image, description } = req.body.campground;
-    await campGround.findByIdAndUpdate(id, { title: title, location: location, price: price, description: description, image: image });
-    req.flash('success', 'Successfully Updated Campground');
-    res.redirect(`/campgrounds/${id}`);
+    const findCampground = await campGround.findById(id);
+    if (findCampground.author === req.user._id) {
+        await campGround.updateOne(id, { title: title, location: location, price: price, description: description, image: image })
+        req.flash('success', 'Successfully Updated Campground');
+        res.redirect(`/campgrounds/${id}`);
+    } else {
+        req.flash('error', "You are not the author of this campground !");
+        res.redirect(`/campgrounds/${id}`);
+    }
 }))
 
 
