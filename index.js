@@ -7,8 +7,9 @@ const methodOverride = require('method-override');
 const ExpressError = require('./utilities/expressError');
 const session = require('express-session');
 const flash = require('connect-flash');
-
-
+const passport = require('passport');
+const LocalStrategy = require('passport-local');
+const User = require('./models/user');
 
 const campgrounds = require('./routes/campground');
 const reviews = require('./routes/reviews');
@@ -39,6 +40,12 @@ const sessionConfig = {
 }
 app.use(session(sessionConfig));
 app.use(flash());
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
 
 // MIDDLEWARE FOR FLASH MESSAGES
 
@@ -54,13 +61,17 @@ app.use('/campgrounds', campgrounds)
 app.use('/campgrounds/:id/reviews', reviews)
 
 
+app.get('/fakeUser', async (req, res) =>{
+    const user = new User({email: 'user@gmail.com', username: 'user'});
+    const newUser = await User.register(user, 'monkey');
+    res.send(newUser);
+})
+
 app.all('*', (req, res, next) => {
-    console.log('2');
     next(new ExpressError('Page not found', 404));
 })
 
 app.use((err, req, res, next) => {
-    console.log('1');
     const { statusCode = 500} = err;
     if(!err.message) err.message = "Ohh no , Something went wrong !!";
     res.status(statusCode).render('error/error.ejs', {err});
