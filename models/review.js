@@ -6,7 +6,7 @@ const reviewSchema = new Schema({
     body: String,
     rating: Number,
     author: {
-        type: mongoose.Schema.Types.ObjectId,
+        type: Schema.Types.ObjectId,
         ref: 'User'
     }
 })
