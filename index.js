@@ -1,3 +1,8 @@
+if(process.env.NODE_ENV != "production"){
+    require('dotenv').config();
+}
+
+
 const express = require('express');
 const app = express();
 const path = require('path');
@@ -64,11 +69,11 @@ app.use('/campgrounds', campgroundRoutes)
 app.use('/campgrounds/:id/reviews', reviewRoutes)
 
 
-app.get('/fakeUser', async (req, res) =>{
-    const user = new User({email: 'user@gmail.com', username: 'user'});
-    const newUser = await User.register(user, 'monkey');
-    res.send(newUser);
-})
+// app.get('/fakeUser', async (req, res) =>{
+//     const user = new User({email: 'user@gmail.com', username: 'user'});
+//     const newUser = await User.register(user, 'monkey');
+//     res.send(newUser);
+// })
 
 app.all('*', (req, res, next) => {
     next(new ExpressError('Page not found', 404));
